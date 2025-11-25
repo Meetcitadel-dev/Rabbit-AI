@@ -244,23 +244,23 @@ export default function DashboardPage() {
         ) : (
           <SimpleGrid columns={{ base: 1, md: 1 }} mt={6} spacing={6}>
             {layoutConfig.showKpis && <KpiGrid data={kpis} />}
-            <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
-              {layoutConfig.showTrend && (
-                <GridItem>
-                  <TrendChart data={series} />
-                </GridItem>
-              )}
-              <GridItem>
-                <Stack spacing={4}>
-                  {layoutConfig.showChat && (
+            {layoutConfig.showTrend && <TrendChart data={series} />}
+
+            {(layoutConfig.showChat || layoutConfig.showInsights) && (
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                {layoutConfig.showChat && (
+                  <GridItem>
                     <ChatPanel filters={serializedFilters} quickPrompts={quickPrompts} />
-                  )}
-                  {layoutConfig.showInsights && (
+                  </GridItem>
+                )}
+                {layoutConfig.showInsights && (
+                  <GridItem>
                     <InsightHighlights recommendations={recommendations} anomalies={anomalies} />
-                  )}
-                </Stack>
-              </GridItem>
-            </Grid>
+                  </GridItem>
+                )}
+              </Grid>
+            )}
+
             <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
               {layoutConfig.showRegionalSplit && (
                 <BreakdownChart

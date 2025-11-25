@@ -55,13 +55,28 @@ export function InsightHighlights({ recommendations, anomalies }: Props) {
             Recent Anomalies
           </Text>
           <List spacing={2}>
-            {anomalies.map((anom, idx) => (
-              <ListItem key={`${anom.date}-${idx}`} fontSize="sm">
-                <ListIcon as={FiAlertTriangle} color={anomalyColor} />
-                {anom.metric} {anom.z_score > 0 ? "spike" : "drop"} on {anom.date} (
-                {anom.value.toLocaleString()} units, z={anom.z_score})
-              </ListItem>
-            ))}
+            {anomalies.length === 0 && (
+              <Text fontSize="sm" color="gray.500">
+                No notable anomalies detected in the current view.
+              </Text>
+            )}
+            {anomalies.map((anom, idx) => {
+              const direction = anom.z_score > 0 ? "spiked" : "fell";
+              const severity =
+                Math.abs(anom.z_score) >= 4
+                  ? "critical"
+                  : Math.abs(anom.z_score) >= 3
+                  ? "high"
+                  : "moderate";
+              return (
+                <ListItem key={`${anom.date}-${idx}`} fontSize="sm">
+                  <ListIcon as={FiAlertTriangle} color={anomalyColor} />
+                  {`${anom.metric} ${direction} to ${anom.value.toLocaleString()} on ${
+                    anom.date
+                  } (${severity} | z=${anom.z_score}).`}
+                </ListItem>
+              );
+            })}
           </List>
         </Box>
       </VStack>

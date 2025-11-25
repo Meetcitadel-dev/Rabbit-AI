@@ -186,7 +186,7 @@ export function FilterBar({ options, onApply, onReset }: Props) {
           </Stack>
           <Box mt={3}>
             <Text fontSize="xs" color={labelColor} mb={2}>Quick Ranges:</Text>
-            <DateRangePresets onSelect={handlePresetSelect} />
+            <DateRangePresets baseRange={options.date_range as [string, string]} onSelect={handlePresetSelect} />
           </Box>
         </>
       )}
