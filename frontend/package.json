@@ -1,0 +1,34 @@
+{
+  "name": "talking-rabbitt-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@chakra-ui/icons": "2.1.1",
+    "@chakra-ui/react": "2.8.2",
+    "@emotion/react": "11.13.3",
+    "@emotion/styled": "11.13.0",
+    "axios": "1.7.7",
+    "framer-motion": "11.11.10",
+    "next": "14.2.13",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-icons": "5.3.0",
+    "recharts": "2.12.7",
+    "swr": "2.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.7.4",
+    "@types/react": "18.3.10",
+    "@types/react-dom": "18.3.0",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.13",
+    "typescript": "5.6.3"
+  }
+}
+
