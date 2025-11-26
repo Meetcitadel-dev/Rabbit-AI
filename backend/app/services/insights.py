@@ -28,13 +28,20 @@ class InsightEngine:
 
     # KPI aggregates
     def kpis(
-        self, start=None, end=None, region=None, category=None, channel=None, promo_flag=None
+        self,
+        start=None,
+        end=None,
+        region=None,
+        category=None,
+        channel=None,
+        promo_flag=None,
+        campaign=None,
     ) -> KPIBlock:
         filtered = self._filter_frame(
-            start, end, region, category, channel=channel, promo_flag=promo_flag
+            start, end, region, category, channel=channel, promo_flag=promo_flag, campaign=campaign
         )
         prev_period = self._previous_period_frame(
-            start, end, region, category, channel, promo_flag
+            start, end, region, category, channel, promo_flag, campaign
         )
         total_sales = float(filtered["net_sales"].sum())
         total_units = int(filtered["units_sold"].sum())
@@ -122,12 +129,105 @@ class InsightEngine:
             )
         return statements[:limit]
 
+    def inventory_summary(self, **filters) -> Dict:
+        filtered = self._filter_frame(**filters)
+        total_inventory = int(filtered["inventory_level"].sum())
+        forecast = int(filtered["forecast_demand"].sum())
+        variance = total_inventory - forecast
+        daily_demand = (
+            filtered.groupby("date")["forecast_demand"].sum().mean() if not filtered.empty else 0
+        )
+        coverage_days = round(total_inventory / daily_demand, 2) if daily_demand else 0
+        stockout_risk = max(forecast - total_inventory, 0) / forecast if forecast else 0
+        return {
+            "total_inventory": total_inventory,
+            "forecast_demand": forecast,
+            "variance": variance,
+            "coverage_days": coverage_days,
+            "stockout_risk": round(stockout_risk, 3),
+        }
+
+    def inventory_series(self, **filters) -> List[Dict]:
+        filtered = self._filter_frame(**filters)
+        grouped = (
+            filtered.groupby("date")[["inventory_level", "forecast_demand"]]
+            .sum()
+            .reset_index()
+            .sort_values("date")
+        )
+        return [
+            {
+                "date": row["date"].date().isoformat(),
+                "inventory": round(row["inventory_level"], 2),
+                "forecast": round(row["forecast_demand"], 2),
+            }
+            for _, row in grouped.iterrows()
+        ]
+
+    def supply_chain_summary(self, **filters) -> Dict:
+        filtered = self._filter_frame(**filters)
+        return {
+            "avg_lead_time": round(float(filtered["supply_lead_time_days"].mean() or 0), 2),
+            "fulfillment_rate": round(float(filtered["fulfillment_rate"].mean() or 0), 3),
+            "backorder_rate": round(float(filtered["backorder_rate"].mean() or 0), 3),
+        }
+
+    def marketing_performance(self, limit: int = 10, **filters) -> List[Dict]:
+        filtered = self._filter_frame(**filters)
+        grouped = (
+            filtered.groupby("campaign_name")[["net_sales", "marketing_spend"]]
+            .sum()
+            .reset_index()
+        )
+        grouped["roi"] = (grouped["net_sales"] - grouped["marketing_spend"]) / grouped[
+            "marketing_spend"
+        ].replace(0, np.nan)
+        grouped["roi"] = grouped["roi"].fillna(0)
+        grouped.sort_values("roi", ascending=False, inplace=True)
+        return [
+            {
+                "campaign_name": row["campaign_name"],
+                "net_sales": round(row["net_sales"], 2),
+                "marketing_spend": round(row["marketing_spend"], 2),
+                "roi": round(row["roi"], 3),
+            }
+            for _, row in grouped.head(limit).iterrows()
+        ]
+
     def narrative_answer(self, question: str, **filters) -> Dict:
         """
         Rudimentary NL interpretation: looks for keywords to decide which aggregation to run.
         Acts as a placeholder for LangChain SQL generation, enabling local demos without keys.
         """
         q_lower = question.lower()
+        if "stock" in q_lower or "inventory" in q_lower:
+            summary = self.inventory_summary(**filters)
+            series = self.inventory_series(**filters)
+            narrative = (
+                f"Total stock is {summary['total_inventory']:,} units vs "
+                f"{summary['forecast_demand']:,} forecast, providing "
+                f"{summary['coverage_days']} days of cover."
+            )
+            return {"type": "inventory", "narrative": narrative, "data": {"summary": summary, "series": series}}
+        if "supply" in q_lower or "lead time" in q_lower or "fulfillment" in q_lower:
+            summary = self.supply_chain_summary(**filters)
+            narrative = (
+                f"Average lead time sits at {summary['avg_lead_time']} days with "
+                f"{summary['fulfillment_rate']*100:.1f}% fulfillment and "
+                f"{summary['backorder_rate']*100:.1f}% backorders."
+            )
+            return {"type": "supply", "narrative": narrative, "data": summary}
+        if "campaign" in q_lower or "marketing" in q_lower:
+            perf = self.marketing_performance(**filters)
+            if perf:
+                best = perf[0]
+                narrative = (
+                    f"{best['campaign_name']} leads ROI at {best['roi']*100:.1f}% "
+                    f"on ${best['marketing_spend']:,.0f} spend."
+                )
+            else:
+                narrative = "No marketing campaigns found for the selected filters."
+            return {"type": "marketing", "narrative": narrative, "data": perf}
         if "top" in q_lower and ("region" in q_lower or "country" in q_lower):
             breakdown = self.breakdown("region", **filters)[:5]
             summary = ", ".join(
@@ -171,7 +271,15 @@ class InsightEngine:
         }
 
     def _filter_frame(
-        self, start=None, end=None, region=None, category=None, channel=None, promo_flag=None, **_
+        self,
+        start=None,
+        end=None,
+        region=None,
+        category=None,
+        channel=None,
+        promo_flag=None,
+        campaign=None,
+        **_,
     ) -> pd.DataFrame:
         frame = self.frame.copy()
         if start:
@@ -194,9 +302,17 @@ class InsightEngine:
                     promo_flag if isinstance(promo_flag, list) else [promo_flag]
                 )
             ]
+        if campaign:
+            frame = frame[
+                frame["campaign_name"].isin(
+                    campaign if isinstance(campaign, list) else [campaign]
+                )
+            ]
         return frame
 
-    def _previous_period_frame(self, start, end, region, category, channel, promo_flag) -> pd.DataFrame:
+    def _previous_period_frame(
+        self, start, end, region, category, channel, promo_flag, campaign
+    ) -> pd.DataFrame:
         if not start or not end:
             return pd.DataFrame(columns=self.frame.columns)
         start_dt = pd.to_datetime(start)
@@ -204,7 +320,9 @@ class InsightEngine:
         duration = end_dt - start_dt
         prev_start = start_dt - duration
         prev_end = start_dt
-        return self._filter_frame(prev_start, prev_end, region, category, channel, promo_flag)
+        return self._filter_frame(
+            prev_start, prev_end, region, category, channel, promo_flag, campaign
+        )
 
     @staticmethod
     def _growth_percentage(current: pd.DataFrame, previous: pd.DataFrame) -> float:

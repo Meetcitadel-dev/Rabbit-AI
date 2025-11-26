@@ -21,6 +21,9 @@ export type LayoutConfig = {
   showCategoryMix: boolean;
   showChat: boolean;
   showInsights: boolean;
+  showInventory: boolean;
+  showSupply: boolean;
+  showMarketing: boolean;
 };
 
 interface Props {
@@ -114,6 +117,41 @@ export function LayoutCustomizer({ isOpen, onClose, config, onChange }: Props) {
                 id='insights'
                 isChecked={config.showInsights}
                 onChange={() => handleToggle('showInsights')}
+              />
+            </FormControl>
+
+            <Divider />
+
+            <FormControl display='flex' alignItems='center'>
+              <FormLabel htmlFor='inventory' mb='0' flex='1'>
+                Inventory Analytics
+              </FormLabel>
+              <Switch
+                id='inventory'
+                isChecked={config.showInventory}
+                onChange={() => handleToggle('showInventory')}
+              />
+            </FormControl>
+
+            <FormControl display='flex' alignItems='center'>
+              <FormLabel htmlFor='supply' mb='0' flex='1'>
+                Supply Chain Metrics
+              </FormLabel>
+              <Switch
+                id='supply'
+                isChecked={config.showSupply}
+                onChange={() => handleToggle('showSupply')}
+              />
+            </FormControl>
+
+            <FormControl display='flex' alignItems='center'>
+              <FormLabel htmlFor='marketing' mb='0' flex='1'>
+                Marketing Performance
+              </FormLabel>
+              <Switch
+                id='marketing'
+                isChecked={config.showMarketing}
+                onChange={() => handleToggle('showMarketing')}
               />
             </FormControl>
           </VStack>

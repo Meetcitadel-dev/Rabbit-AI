@@ -100,3 +100,52 @@ export async function fetchAnomalies(filters: Record<string, unknown>) {
   }[];
 }
 
+export async function fetchInventorySummary(filters: Record<string, unknown>) {
+  const res = await fetch(`${API_BASE}/api/inventory/summary`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(filters),
+  });
+  if (!res.ok) throw new Error("Failed to load inventory summary");
+  return res.json();
+}
+
+export async function fetchInventorySeries(filters: Record<string, unknown>) {
+  const res = await fetch(`${API_BASE}/api/inventory/series`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(filters),
+  });
+  if (!res.ok) throw new Error("Failed to load inventory series");
+  return (await res.json()).points as {
+    date: string;
+    inventory: number;
+    forecast: number;
+  }[];
+}
+
+export async function fetchSupplySummary(filters: Record<string, unknown>) {
+  const res = await fetch(`${API_BASE}/api/supply/summary`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(filters),
+  });
+  if (!res.ok) throw new Error("Failed to load supply metrics");
+  return res.json();
+}
+
+export async function fetchMarketingPerformance(filters: Record<string, unknown>) {
+  const res = await fetch(`${API_BASE}/api/marketing/performance`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(filters),
+  });
+  if (!res.ok) throw new Error("Failed to load marketing performance");
+  return (await res.json()).campaigns as {
+    campaign_name: string;
+    net_sales: number;
+    marketing_spend: number;
+    roi: number;
+  }[];
+}
+

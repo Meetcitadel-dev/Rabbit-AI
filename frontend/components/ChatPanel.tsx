@@ -169,8 +169,8 @@ export function ChatPanel({ filters, quickPrompts = [] }: Props) {
       <VStack align='stretch' spacing={3} height='360px' overflowY='auto' mb={4}>
         {messages.length === 0 && (
           <Text fontSize='sm' color={emptyTextColor}>
-            Ask me anything about last quarter performance, promo effectiveness, or
-            regional outliers.
+            Ask me anything about last quarter performance, stock coverage, supply chain health,
+            or which marketing campaign delivered the best ROI.
           </Text>
         )}
         {messages.map((msg, idx) => (

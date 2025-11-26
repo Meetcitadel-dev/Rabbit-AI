@@ -51,8 +51,22 @@ All metrics endpoints accept the same filter schema:
 
 - `start`, `end` (date strings)
 - `region`, `category`, `channel`, `promo_flag` (arrays of strings)
+- `campaign` (array of marketing campaign names)
 
 Filters are applied consistently across KPIs, series, breakdowns, chat, and export operations.
+
+## Inventory & Supply Chain Analytics
+- **Endpoints**:
+  - `POST /api/inventory/summary`
+  - `POST /api/inventory/series`
+  - `POST /api/supply/summary`
+- **Sample question**: “Show me current stock levels vs. forecasted demand.”
+- **UI**: Inventory trend component charts stock vs. forecast, with coverage days and stockout risk KPIs; supply chain cards show lead time, fulfillment, and backorders.
+
+## Marketing Performance Evaluation
+- **Endpoint**: `POST /api/marketing/performance`
+- **Sample question**: “Which marketing campaign had the best ROI?”
+- **UI**: Marketing ROI bar chart ranks campaigns by net sales, spend, and ROI, mirroring a Power BI-style performance dashboard.
 
 ## Planned Enhancements
 - **Custom Alerts**: Email/Slack notifications when KPIs breach thresholds.

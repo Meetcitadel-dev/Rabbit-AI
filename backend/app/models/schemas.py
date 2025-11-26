@@ -13,6 +13,7 @@ class FilterResponse(BaseModel):
     channels: List[str]
     categories: List[str]
     promo_flags: List[str]
+    campaigns: List[str]
     date_range: List[str]
 
 
@@ -37,6 +38,7 @@ class MetricRequest(BaseModel):
     category: Optional[List[str]] = Field(default=None)
     channel: Optional[List[str]] = Field(default=None)
     promo_flag: Optional[List[str]] = Field(default=None)
+    campaign: Optional[List[str]] = Field(default=None)
 
 
 class ChatRequest(MetricRequest):
@@ -90,6 +92,7 @@ class ExportRequest(BaseModel):
     category: Optional[List[str]] = None
     channel: Optional[List[str]] = None
     promo_flag: Optional[List[str]] = None
+    campaign: Optional[List[str]] = None
 
 
 class AlertConfig(BaseModel):
@@ -108,4 +111,40 @@ class ComparisonRequest(BaseModel):
     region: Optional[List[str]] = None
     category: Optional[List[str]] = None
     channel: Optional[List[str]] = None
+    campaign: Optional[List[str]] = None
+
+
+class InventorySummaryResponse(BaseModel):
+    total_inventory: int
+    forecast_demand: int
+    variance: int
+    coverage_days: float
+    stockout_risk: float
+
+
+class InventorySeriesPoint(BaseModel):
+    date: str
+    inventory: float
+    forecast: float
+
+
+class InventorySeriesResponse(BaseModel):
+    points: List[InventorySeriesPoint]
+
+
+class SupplyChainResponse(BaseModel):
+    avg_lead_time: float
+    fulfillment_rate: float
+    backorder_rate: float
+
+
+class MarketingPerformanceItem(BaseModel):
+    campaign_name: str
+    net_sales: float
+    marketing_spend: float
+    roi: float
+
+
+class MarketingPerformanceResponse(BaseModel):
+    campaigns: List[MarketingPerformanceItem]
 

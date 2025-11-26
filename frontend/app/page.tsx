@@ -25,9 +25,13 @@ import {
   fetchAnomalies,
   fetchBreakdown,
   fetchFilters,
+  fetchInventorySeries,
+  fetchInventorySummary,
   fetchKpis,
+  fetchMarketingPerformance,
   fetchRecommendations,
   fetchSeries,
+  fetchSupplySummary,
   KPIBlock,
 } from '../lib/api';
 import { PersonaOption, PersonaSelector } from '../components/PersonaSelector';
@@ -36,12 +40,16 @@ import { InsightHighlights } from '../components/InsightHighlights';
 import { ExportMenu } from '../components/ExportMenu';
 import { ComparisonModal } from '../components/ComparisonModal';
 import { LayoutCustomizer, LayoutConfig } from '../components/LayoutCustomizer';
+import { InventoryTrend } from '../components/InventoryTrend';
+import { SupplyChainStats } from '../components/SupplyChainStats';
+import { MarketingRoiChart } from '../components/MarketingRoiChart';
 
 type FilterOptions = {
   regions: string[];
   categories: string[];
   channels: string[];
   promo_flags: string[];
+  campaigns: string[];
   date_range: [string, string];
 };
 
@@ -50,6 +58,7 @@ const initialOptions: FilterOptions = {
   categories: [],
   channels: [],
   promo_flags: [],
+  campaigns: [],
   date_range: ['', ''],
 };
 
@@ -59,6 +68,8 @@ const basePrompts = [
   'Show me last quarter performance.',
   'Which promos over-indexed?',
   'Where are we losing momentum?',
+  'Show me current stock cover.',
+  'Which marketing campaign has the best ROI?',
 ];
 
 const defaultLayout: LayoutConfig = {
@@ -68,6 +79,9 @@ const defaultLayout: LayoutConfig = {
   showCategoryMix: true,
   showChat: true,
   showInsights: true,
+  showInventory: true,
+  showSupply: true,
+  showMarketing: true,
 };
 
 export default function DashboardPage() {
@@ -80,6 +94,14 @@ export default function DashboardPage() {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [anomalies, setAnomalies] = useState<
     { date: string; metric: string; value: number; z_score: number }[]
+  >([]);
+  const [inventorySummary, setInventorySummary] = useState<any>(null);
+  const [inventorySeries, setInventorySeries] = useState<
+    { date: string; inventory: number; forecast: number }[]
+  >([]);
+  const [supplyMetrics, setSupplyMetrics] = useState<any>(null);
+  const [marketingPerformance, setMarketingPerformance] = useState<
+    { campaign_name: string; net_sales: number; marketing_spend: number; roi: number }[]
   >([]);
   const [quickPrompts, setQuickPrompts] = useState<string[]>(basePrompts);
   const [activePersona, setActivePersona] = useState<string>();
@@ -103,6 +125,7 @@ export default function DashboardPage() {
           categories: filterOptions.categories,
           channels: filterOptions.channels,
           promo_flags: filterOptions.promo_flags,
+          campaigns: filterOptions.campaigns ?? [],
           date_range: filterOptions.date_range,
         });
         const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
@@ -131,7 +154,7 @@ export default function DashboardPage() {
     if (typeof window === 'undefined') return;
     const saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
     if (saved) {
-      setLayoutConfig(JSON.parse(saved));
+      setLayoutConfig({ ...defaultLayout, ...JSON.parse(saved) });
     }
   }, []);
 
@@ -151,6 +174,10 @@ export default function DashboardPage() {
         categoryData,
         recs,
         anomalyData,
+        inventorySummaryData,
+        inventorySeriesData,
+        supplyData,
+        marketingData,
       ] = await Promise.all([
         fetchKpis(payload),
         fetchSeries(payload),
@@ -158,6 +185,10 @@ export default function DashboardPage() {
         fetchBreakdown(payload, 'category'),
         fetchRecommendations(payload),
         fetchAnomalies(payload),
+        fetchInventorySummary(payload),
+        fetchInventorySeries(payload),
+        fetchSupplySummary(payload),
+        fetchMarketingPerformance(payload),
       ]);
       setKpis(kpiData);
       setSeries(seriesData);
@@ -165,6 +196,10 @@ export default function DashboardPage() {
       setCategorySplit(categoryData);
       setRecommendations(recs);
       setAnomalies(anomalyData);
+      setInventorySummary(inventorySummaryData);
+      setInventorySeries(inventorySeriesData);
+      setSupplyMetrics(supplyData);
+      setMarketingPerformance(marketingData);
     } finally {
       setLoading(false);
     }
@@ -279,6 +314,21 @@ export default function DashboardPage() {
                 />
               )}
             </Grid>
+
+            {layoutConfig.showInventory && (
+              <InventoryTrend summary={inventorySummary} series={inventorySeries} />
+            )}
+
+            {(layoutConfig.showSupply || layoutConfig.showMarketing) && (
+              <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
+                {layoutConfig.showSupply && (
+                  <SupplyChainStats metrics={supplyMetrics} />
+                )}
+                {layoutConfig.showMarketing && (
+                  <MarketingRoiChart data={marketingPerformance} />
+                )}
+              </Grid>
+            )}
           </SimpleGrid>
         )}
       </Container>
@@ -292,6 +342,7 @@ function serializeFilters(filters: FilterState) {
   if (filters.category) payload.category = [filters.category];
   if (filters.channel) payload.channel = [filters.channel];
   if (filters.promo_flag) payload.promo_flag = [filters.promo_flag];
+  if (filters.campaign) payload.campaign = [filters.campaign];
   if (filters.start) payload.start = filters.start;
   if (filters.end) payload.end = filters.end;
   return payload;

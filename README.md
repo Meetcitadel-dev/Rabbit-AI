@@ -100,6 +100,8 @@ pytest
 - **Period Comparison**: Compare KPIs between two time ranges side-by-side with delta highlighting.
 - **Dashboard Customization**: Toggle widget visibility (KPIs, trend chart, chat panel, etc.) and persist layout preferences.
 - **Drill-Down Tables**: View underlying data rows from any breakdown chart with sortable table modals.
+- **Inventory & Supply Chain Analytics**: Monitor stock vs. forecast, coverage days, lead times, fulfillment, and backorders with dedicated API endpoints and charts.
+- **Marketing Performance Dashboards**: Rank campaigns by ROI to answer questions like “Which marketing campaign had the best ROI?” right from the UI.
 
 ## Next Steps
 

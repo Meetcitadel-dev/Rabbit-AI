@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-Utility to synthesize multi-dimensional sales data for Talking Rabbitt.
+Utility to synthesize multi-dimensional sales + operations data for Talking Rabbitt.
 
-The generator produces one year of daily records with the following fields:
+Columns:
 date, week, month, quarter, region, country, channel, category, subcategory,
-sku, promo_flag, units_sold, net_sales, discount_rate, marketing_spend.
-
-Usage:
-    python scripts/generate_sales_data.py [--rows 3650] [--seed 7] \
-        --out data/sales_seed.csv
+sku, promo_flag, units_sold, net_sales, discount_rate, marketing_spend,
+inventory_level, forecast_demand, supply_lead_time_days, fulfillment_rate,
+backorder_rate, campaign_name, marketing_roi.
 """
 from __future__ import annotations
 
@@ -37,6 +35,11 @@ CATEGORIES = {
 }
 
 PROMO_TYPES = ["None", "Clearance", "BOGO", "Flash", "Loyalty"]
+CAMPAIGNS = {
+    "Apparel": ["Spring Refresh", "Summer Splash", "Back-to-School"],
+    "Footwear": ["Run Faster", "Trail Master", "City Walks"],
+    "Accessories": ["Everyday Essentials", "Travel Light", "Style Up"],
+}
 
 
 @dataclass
@@ -53,6 +56,13 @@ class Record:
     net_sales: float
     discount_rate: float
     marketing_spend: float
+    inventory_level: int
+    forecast_demand: int
+    supply_lead_time_days: int
+    fulfillment_rate: float
+    backorder_rate: float
+    campaign_name: str
+    marketing_roi: float
 
     def as_row(self) -> List[str]:
         return [
@@ -71,6 +81,13 @@ class Record:
             f"{self.net_sales:.2f}",
             f"{self.discount_rate:.2f}",
             f"{self.marketing_spend:.2f}",
+            str(self.inventory_level),
+            str(self.forecast_demand),
+            str(self.supply_lead_time_days),
+            f"{self.fulfillment_rate:.2f}",
+            f"{self.backorder_rate:.2f}",
+            self.campaign_name,
+            f"{self.marketing_roi:.2f}",
         ]
 
 
@@ -97,6 +114,14 @@ def generate_records(start: date, days: int, *, seed: int) -> Sequence[Record]:
                 discount_rate = 0.05 if promo == "None" else random.uniform(0.1, 0.35)
                 net_sales = units * price * (1 - discount_rate)
                 marketing = random.uniform(200, 1500) * season_multiplier
+                forecast = max(int(units * random.uniform(0.9, 1.25)), units + 5)
+                safety_stock = random.randint(20, 80)
+                inventory = max(forecast - units + safety_stock, 0)
+                lead_time = random.randint(5, 20)
+                fulfillment = round(random.uniform(0.9, 0.99), 3)
+                backorder_ratio = round(max(units - inventory, 0) / max(inventory + 1, units), 3)
+                campaign = random.choice(CAMPAIGNS[category])
+                marketing_roi = round((net_sales - marketing) / marketing if marketing else 0.0, 3)
 
                 records.append(
                     Record(
@@ -112,6 +137,13 @@ def generate_records(start: date, days: int, *, seed: int) -> Sequence[Record]:
                         net_sales=net_sales,
                         discount_rate=discount_rate,
                         marketing_spend=marketing,
+                        inventory_level=inventory,
+                        forecast_demand=forecast,
+                        supply_lead_time_days=lead_time,
+                        fulfillment_rate=fulfillment,
+                        backorder_rate=backorder_ratio,
+                        campaign_name=campaign,
+                        marketing_roi=marketing_roi,
                     )
                 )
     return records
@@ -157,6 +189,13 @@ def write_csv(records: Sequence[Record], path: Path) -> None:
         "net_sales",
         "discount_rate",
         "marketing_spend",
+        "inventory_level",
+        "forecast_demand",
+        "supply_lead_time_days",
+        "fulfillment_rate",
+        "backorder_rate",
+        "campaign_name",
+        "marketing_roi",
     ]
     with path.open("w", newline="", encoding="utf-8") as fp:
         writer = csv.writer(fp)

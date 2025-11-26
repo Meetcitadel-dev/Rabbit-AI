@@ -19,6 +19,10 @@ from .models.schemas import (
     AnomalyResponse,
     ExportRequest,
     ComparisonRequest,
+    InventorySummaryResponse,
+    InventorySeriesResponse,
+    SupplyChainResponse,
+    MarketingPerformanceResponse,
 )
 from .services.data_loader import DataRepository
 from .services.insights import InsightEngine
@@ -82,6 +86,7 @@ async def kpi(payload: MetricRequest) -> KPIResponse:
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     return KPIResponse(**block.__dict__)
 
@@ -96,6 +101,7 @@ async def breakdown(payload: MetricRequest, group_by: str = "region"):
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     return {"group_by": group_by, "data": data}
 
@@ -111,6 +117,7 @@ async def series(payload: MetricRequest, metric: str = "net_sales", freq: str = 
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     return {"metric": metric, "freq": freq, "data": data}
 
@@ -125,6 +132,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     return ChatResponse(**result)
 
@@ -151,6 +159,7 @@ async def recommendations(payload: MetricRequest) -> RecommendationResponse:
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     return RecommendationResponse(items=items)
 
@@ -164,6 +173,7 @@ async def anomalies(payload: MetricRequest) -> AnomalyResponse:
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     return AnomalyResponse(items=data[:5])
 
@@ -183,6 +193,62 @@ async def upload(file: UploadFile = File(...)) -> UploadResponse:
     )
 
 
+@app.post("/api/inventory/summary", response_model=InventorySummaryResponse)
+async def inventory_summary(payload: MetricRequest) -> InventorySummaryResponse:
+    summary = engine.inventory_summary(
+        start=payload.start,
+        end=payload.end,
+        region=payload.region,
+        category=payload.category,
+        channel=payload.channel,
+        promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
+    )
+    return InventorySummaryResponse(**summary)
+
+
+@app.post("/api/inventory/series", response_model=InventorySeriesResponse)
+async def inventory_series(payload: MetricRequest) -> InventorySeriesResponse:
+    points = engine.inventory_series(
+        start=payload.start,
+        end=payload.end,
+        region=payload.region,
+        category=payload.category,
+        channel=payload.channel,
+        promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
+    )
+    return InventorySeriesResponse(points=points)
+
+
+@app.post("/api/supply/summary", response_model=SupplyChainResponse)
+async def supply_summary(payload: MetricRequest) -> SupplyChainResponse:
+    summary = engine.supply_chain_summary(
+        start=payload.start,
+        end=payload.end,
+        region=payload.region,
+        category=payload.category,
+        channel=payload.channel,
+        promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
+    )
+    return SupplyChainResponse(**summary)
+
+
+@app.post("/api/marketing/performance", response_model=MarketingPerformanceResponse)
+async def marketing_performance(payload: MetricRequest) -> MarketingPerformanceResponse:
+    campaigns = engine.marketing_performance(
+        start=payload.start,
+        end=payload.end,
+        region=payload.region,
+        category=payload.category,
+        channel=payload.channel,
+        promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
+    )
+    return MarketingPerformanceResponse(campaigns=campaigns)
+
+
 @app.post("/api/export")
 async def export_data(payload: ExportRequest):
     """Export filtered data in requested format."""
@@ -193,6 +259,7 @@ async def export_data(payload: ExportRequest):
         category=payload.category,
         channel=payload.channel,
         promo_flag=payload.promo_flag,
+        campaign=payload.campaign,
     )
     result = ExportService.prepare_export(
         filtered,
@@ -216,6 +283,7 @@ async def comparison(payload: ComparisonRequest):
         region=payload.region,
         category=payload.category,
         channel=payload.channel,
+        campaign=payload.campaign,
     )
     compare_kpi = engine.kpis(
         start=payload.compare_start,
@@ -223,6 +291,7 @@ async def comparison(payload: ComparisonRequest):
         region=payload.region,
         category=payload.category,
         channel=payload.channel,
+        campaign=payload.campaign,
     )
     return {
         "base": base_kpi.__dict__,

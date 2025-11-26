@@ -28,6 +28,13 @@ REQUIRED_COLUMNS = {
     "net_sales": "float",
     "discount_rate": "float",
     "marketing_spend": "float",
+    "inventory_level": "Int64",
+    "forecast_demand": "Int64",
+    "supply_lead_time_days": "Int64",
+    "fulfillment_rate": "float",
+    "backorder_rate": "float",
+    "campaign_name": "string",
+    "marketing_roi": "float",
 }
 
 
@@ -42,6 +49,7 @@ class Dataset:
             "channels": sorted(self.frame["channel"].dropna().unique().tolist()),
             "categories": sorted(self.frame["category"].dropna().unique().tolist()),
             "promo_flags": sorted(self.frame["promo_flag"].dropna().unique().tolist()),
+            "campaigns": sorted(self.frame["campaign_name"].dropna().unique().tolist()),
             "date_range": [
                 self.frame["date"].min().date().isoformat(),
                 self.frame["date"].max().date().isoformat(),
@@ -93,7 +101,15 @@ class DataRepository:
         return self._dataset
 
     def filtered_frame(
-        self, *, region=None, category=None, channel=None, promo_flag=None, start=None, end=None
+        self,
+        *,
+        region=None,
+        category=None,
+        channel=None,
+        promo_flag=None,
+        campaign=None,
+        start=None,
+        end=None,
     ) -> pd.DataFrame:
         frame = self.dataset.frame.copy()
         if region:
@@ -105,6 +121,10 @@ class DataRepository:
         if promo_flag:
             frame = frame[
                 frame["promo_flag"].isin(promo_flag if isinstance(promo_flag, list) else [promo_flag])
+            ]
+        if campaign:
+            frame = frame[
+                frame["campaign_name"].isin(campaign if isinstance(campaign, list) else [campaign])
             ]
         if start:
             frame = frame[frame["date"] >= pd.to_datetime(start)]

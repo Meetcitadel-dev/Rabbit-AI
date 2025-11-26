@@ -19,6 +19,7 @@ type FilterOption = {
   categories: string[];
   channels: string[];
   promo_flags: string[];
+  campaigns: string[];
   date_range: [string, string];
 };
 
@@ -27,6 +28,7 @@ export type FilterState = {
   category?: string;
   channel?: string;
   promo_flag?: string;
+  campaign?: string;
   start?: string;
   end?: string;
 };
@@ -143,6 +145,21 @@ export function FilterBar({ options, onApply, onReset }: Props) {
             >
               {(options.promo_flags ?? []).map((flag) => (
                 <option key={flag}>{flag}</option>
+              ))}
+            </Select>
+          </VStack>
+          <VStack align="start" flex={1}>
+            <Text fontSize="sm" color={labelColor}>
+              Campaign
+            </Text>
+            <Select
+              placeholder="All campaigns"
+              value={localFilters.campaign ?? ""}
+              onChange={(e) => handleChange("campaign", e.target.value)}
+              bg={fieldBg}
+            >
+              {(options.campaigns ?? []).map((campaign) => (
+                <option key={campaign}>{campaign}</option>
               ))}
             </Select>
           </VStack>
